@@ -53,9 +53,9 @@ if reference_file and uploaded_files:
                 "Normalized (%)": round(normalized, 2)
             })
 
-        # Display results
-        df = pd.DataFrame(results)
-        with col2:
-            st.write("### Dirt Scores")
-            st.dataframe(df)
-st.bar_chart(df.set_index("Sample")[["Normalized (%)"]])
+# Display results
+df = pd.DataFrame(results)
+with col2:
+    st.write("### Dirt Scores")
+    st.dataframe(df)
+    st.bar_chart(df.set_index("Sample")[["Normalized (%)"]])
