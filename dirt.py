@@ -8,7 +8,7 @@ from streamlit_cropper import st_cropper
 
 # Page configuration
 st.set_page_config(page_title="Dirt Analyzer Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard with Cropping & Color Analysis")
+st.title("Dirt Comparison Dashboard")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
