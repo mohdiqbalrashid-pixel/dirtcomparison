@@ -21,6 +21,12 @@ if "cropped_reference" not in st.session_state:
 if "cropped_samples" not in st.session_state:
     st.session_state.cropped_samples = {}
 
+# Reset button
+if st.sidebar.button("Reset All Crops"):
+    st.session_state.cropped_reference = None
+    st.session_state.cropped_samples = {}
+    st.success("All crops have been reset!")
+
 # Color analysis function
 def analyze_color(image):
     img_array = np.array(image)
@@ -47,12 +53,18 @@ if reference_file and uploaded_files:
     if st.session_state.cropped_reference:
         st.write("### Crop Sample Images")
         sample_names = [f"Sample {i+1}" for i in range(len(uploaded_files))]
-        selected_sample = st.selectbox("Select a sample to crop", sample_names)
+        selected_sample = st.selectbox("Select a sample to crop or edit", sample_names)
         selected_index = sample_names.index(selected_sample)
 
         if selected_sample in st.session_state.cropped_samples:
-            st.write(f"✅ Crop already saved for {selected_sample}")
+            st.write(f"✅ Crop saved for {selected_sample}")
             st.image(st.session_state.cropped_samples[selected_sample], caption=f"Saved Crop for {selected_sample}", width=250)
+            if st.button("Edit Crop"):
+                cropped_img = st_cropper(Image.open(uploaded_files[selected_index]), realtime_update=True, box_color="orange")
+                st.image(cropped_img, caption=f"Editing Crop for {selected_sample}", width=250)
+                if st.button("Save Edited Crop"):
+                    st.session_state.cropped_samples[selected_sample] = cropped_img
+                    st.success(f"Crop updated for {selected_sample}")
         else:
             image = Image.open(uploaded_files[selected_index])
             cropped_img = st_cropper(image, realtime_update=True, box_color="green")
