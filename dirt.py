@@ -58,4 +58,4 @@ if reference_file and uploaded_files:
         with col2:
             st.write("### Dirt Scores")
             st.dataframe(df)
-            st.bar_chart(df.set_index("Sample")[["Normalized
+st.bar_chart(df.set_index("Sample")[["Normalized (%)"]])
