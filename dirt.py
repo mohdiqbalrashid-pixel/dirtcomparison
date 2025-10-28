@@ -35,13 +35,13 @@ if reference_file and uploaded_files:
         st.write("### Crop Reference Image")
         ref_image = Image.open(reference_file)
         cropped_ref = st_cropper(ref_image, realtime_update=True, box_color="blue")
-        st.image(cropped_ref, caption="Selected Reference Region", use_column_width=True)
+        st.image(cropped_ref, caption="Selected Reference Region", width=250)
         if st.button("Save Reference Crop"):
             st.session_state.cropped_reference = cropped_ref
             st.success("Reference crop saved!")
     else:
         st.write("✅ Reference crop saved.")
-        st.image(st.session_state.cropped_reference, caption="Reference Crop", use_column_width=True)
+        st.image(st.session_state.cropped_reference, caption="Reference Crop", width=250)
 
     # Crop sample images
     if st.session_state.cropped_reference:
@@ -52,11 +52,11 @@ if reference_file and uploaded_files:
 
         if selected_sample in st.session_state.cropped_samples:
             st.write(f"✅ Crop already saved for {selected_sample}")
-            st.image(st.session_state.cropped_samples[selected_sample], caption=f"Saved Crop for {selected_sample}", use_column_width=True)
+            st.image(st.session_state.cropped_samples[selected_sample], caption=f"Saved Crop for {selected_sample}", width=250)
         else:
             image = Image.open(uploaded_files[selected_index])
             cropped_img = st_cropper(image, realtime_update=True, box_color="green")
-            st.image(cropped_img, caption=f"Selected Region for {selected_sample}", use_column_width=True)
+            st.image(cropped_img, caption=f"Selected Region for {selected_sample}", width=250)
             if st.button("Save Sample Crop"):
                 st.session_state.cropped_samples[selected_sample] = cropped_img
                 st.success(f"Crop saved for {selected_sample}")
@@ -86,22 +86,26 @@ if reference_file and uploaded_files:
                     "Color Diff": round(color_diff, 2)
                 })
 
-            # Display results with larger color swatches
+            # Organized layout: 3 columns for samples
             st.write("### Dirt Analysis Results")
-            for row in results:
+            cols = st.columns(3)
+            for idx, row in enumerate(results):
                 color_rgb = row["Avg Color (R,G,B)"]
                 color_hex = '#%02x%02x%02x' % (int(color_rgb[0]), int(color_rgb[1]), int(color_rgb[2]))
-                st.markdown(
-                    f"""
-                    <div style="display:flex;align-items:center;margin-bottom:16px;">
-                        <div style="width:60px;height:60px;background-color:{color_hex};border:2px solid #000;margin-right:16px;"></div>
-                        <span style="font-size:18px;">
-                            <b>{row['Sample']}</b> | Dirt Score: {row['Dirt Score']} | Normalized: {row['Normalized (%)']}% | Color Diff: {row['Color Diff']}
-                        </span>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
+                with cols[idx % 3]:
+                    st.image(st.session_state.cropped_samples[row["Sample"]], caption=row["Sample"], width=200)
+                    st.markdown(
+                        f"""
+                        <div style="margin-top:8px;">
+                            <div style="width:60px;height:60px;background-color:{color_hex};border:2px solid #000;margin-bottom:8px;"></div>
+                            <span style="font-size:14px;">
+                                Dirt: {row['Dirt Score']} | Norm: {row['Normalized (%)']}%<br>
+                                Color Diff: {row['Color Diff']}
+                            </span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
 
             # Charts
             df = pd.DataFrame(results)
