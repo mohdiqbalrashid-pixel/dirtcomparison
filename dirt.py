@@ -86,12 +86,23 @@ if reference_file and uploaded_files:
                     "Color Diff": round(color_diff, 2)
                 })
 
-            # Display results
-            df = pd.DataFrame(results)
+            # Display results with color swatches
             st.write("### Dirt Analysis Results")
-            st.dataframe(df)
+            for row in results:
+                color_rgb = row["Avg Color (R,G,B)"]
+                color_hex = '#%02x%02x%02x' % (int(color_rgb[0]), int(color_rgb[1]), int(color_rgb[2]))
+                st.markdown(
+                    f"""
+                    <div style="display:flex;align-items:center;margin-bottom:8px;">
+                        <div style="width:20px;height:20px;background-color:{color_hex};border:1px solid #000;margin-right:8px;"></div>
+                        <span><b>{row['Sample']}</b> | Dirt Score: {row['Dirt Score']} | Normalized: {row['Normalized (%)']}% | Color Diff: {row['Color Diff']}</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
             # Charts
+            df = pd.DataFrame(results)
             st.write("#### Dirt Score Comparison")
             st.bar_chart(df.set_index("Sample")[["Dirt Score"]])
 
