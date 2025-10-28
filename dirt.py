@@ -5,11 +5,10 @@ import pandas as pd
 from PIL import Image
 import io
 from streamlit_cropper import st_cropper
-from skimage.measure import shannon_entropy
 
 # Page configuration
 st.set_page_config(page_title="Dirt Analyzer Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard with Cropping, Color & Texture Analysis")
+st.title("Dirt Comparison Dashboard with Cropping & Color Analysis")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
@@ -22,20 +21,11 @@ if "cropped_reference" not in st.session_state:
 if "cropped_samples" not in st.session_state:
     st.session_state.cropped_samples = {}
 
-# Analysis function
-def analyze_color_texture(image):
+# Color analysis function
+def analyze_color(image):
     img_array = np.array(image)
-
-    # Color analysis
     avg_color = img_array.mean(axis=(0, 1))  # [R, G, B]
-    avg_color = [round(c, 2) for c in avg_color]
-
-    # Texture analysis
-    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-    laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-    entropy = shannon_entropy(gray)
-
-    return avg_color, laplacian_var, entropy
+    return [round(c, 2) for c in avg_color]
 
 if reference_file and uploaded_files:
     st.sidebar.success("Files uploaded successfully!")
@@ -77,7 +67,7 @@ if reference_file and uploaded_files:
             # Reference metrics
             ref_gray = cv2.cvtColor(np.array(st.session_state.cropped_reference), cv2.COLOR_RGB2GRAY)
             ref_score = 255 - np.mean(ref_gray)
-            ref_color, ref_texture, ref_entropy = analyze_color_texture(st.session_state.cropped_reference)
+            ref_color = analyze_color(st.session_state.cropped_reference)
 
             results = []
             for sample_name, cropped_img in st.session_state.cropped_samples.items():
@@ -85,7 +75,7 @@ if reference_file and uploaded_files:
                 dirt_score = 255 - np.mean(gray)
                 normalized = ((dirt_score - ref_score) / ref_score) * 100
 
-                avg_color, laplacian_var, entropy = analyze_color_texture(cropped_img)
+                avg_color = analyze_color(cropped_img)
                 color_diff = sum(abs(np.array(avg_color) - np.array(ref_color)))  # Simple RGB diff
 
                 results.append({
@@ -93,9 +83,7 @@ if reference_file and uploaded_files:
                     "Dirt Score": round(dirt_score, 2),
                     "Normalized (%)": round(normalized, 2),
                     "Avg Color (R,G,B)": avg_color,
-                    "Color Diff": round(color_diff, 2),
-                    "Texture Score": round(laplacian_var, 2),
-                    "Texture Complexity": round(entropy, 2)
+                    "Color Diff": round(color_diff, 2)
                 })
 
             # Display results
@@ -106,9 +94,6 @@ if reference_file and uploaded_files:
             # Charts
             st.write("#### Dirt Score Comparison")
             st.bar_chart(df.set_index("Sample")[["Dirt Score"]])
-
-            st.write("#### Texture Score Comparison")
-            st.bar_chart(df.set_index("Sample")[["Texture Score"]])
 
             # Download CSV
             csv_buffer = io.StringIO()
