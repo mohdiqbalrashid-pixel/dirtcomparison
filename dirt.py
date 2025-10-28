@@ -14,7 +14,7 @@ st.sidebar.header("Upload Images")
 reference_file = st.sidebar.file_uploader("Upload Clean Reference Image", type=["jpg", "png"])
 uploaded_files = st.sidebar.file_uploader("Upload Sample Images", type=["jpg", "png"], accept_multiple_files=True)
 
-# Session state for cropped images
+# Initialize session state
 if "cropped_reference" not in st.session_state:
     st.session_state.cropped_reference = None
 if "cropped_samples" not in st.session_state:
@@ -23,7 +23,7 @@ if "cropped_samples" not in st.session_state:
 if reference_file and uploaded_files:
     st.sidebar.success("Files uploaded successfully!")
 
-    # Step 1: Crop reference image
+    # Crop reference image
     if st.session_state.cropped_reference is None:
         st.write("### Crop Reference Image")
         ref_image = Image.open(reference_file)
@@ -32,24 +32,31 @@ if reference_file and uploaded_files:
         if st.button("Save Reference Crop"):
             st.session_state.cropped_reference = cropped_ref
             st.success("Reference crop saved!")
+    else:
+        st.write("✅ Reference crop saved.")
+        st.image(st.session_state.cropped_reference, caption="Reference Crop", use_column_width=True)
 
-    # Step 2: Crop sample images
+    # Crop sample images
     if st.session_state.cropped_reference:
         st.write("### Crop Sample Images")
         sample_names = [f"Sample {i+1}" for i in range(len(uploaded_files))]
         selected_sample = st.selectbox("Select a sample to crop", sample_names)
         selected_index = sample_names.index(selected_sample)
-        image = Image.open(uploaded_files[selected_index])
-        cropped_img = st_cropper(image, realtime_update=True, box_color="green")
-        st.image(cropped_img, caption=f"Selected Region for {selected_sample}", use_column_width=True)
-        if st.button("Save Sample Crop"):
-            st.session_state.cropped_samples[selected_sample] = cropped_img
-            st.success(f"Crop saved for {selected_sample}")
 
-    # Step 3: Analyze after all crops
+        if selected_sample in st.session_state.cropped_samples:
+            st.write(f"✅ Crop already saved for {selected_sample}")
+            st.image(st.session_state.cropped_samples[selected_sample], caption=f"Saved Crop for {selected_sample}", use_column_width=True)
+        else:
+            image = Image.open(uploaded_files[selected_index])
+            cropped_img = st_cropper(image, realtime_update=True, box_color="green")
+            st.image(cropped_img, caption=f"Selected Region for {selected_sample}", use_column_width=True)
+            if st.button("Save Sample Crop"):
+                st.session_state.cropped_samples[selected_sample] = cropped_img
+                st.success(f"Crop saved for {selected_sample}")
+
+    # Analyze when all crops are saved
     if len(st.session_state.cropped_samples) == len(uploaded_files):
         if st.button("Analyze Dirt"):
-            # Calculate reference dirt score
             ref_gray = cv2.cvtColor(np.array(st.session_state.cropped_reference), cv2.COLOR_RGB2GRAY)
             ref_score = 255 - np.mean(ref_gray)
 
@@ -64,7 +71,6 @@ if reference_file and uploaded_files:
                     "Normalized (%)": round(normalized, 2)
                 })
 
-            # Display results
             df = pd.DataFrame(results)
             st.write("### Dirt Scores")
             st.dataframe(df)
