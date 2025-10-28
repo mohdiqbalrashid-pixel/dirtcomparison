@@ -90,6 +90,16 @@ if reference_file and uploaded_files:
                 ref_color = analyze_color(st.session_state.cropped_reference)
 
                 results = []
+                # Add reference row
+                results.append({
+                    "Sample": "Reference",
+                    "Dirt Score": round(ref_score, 2),
+                    "Normalized (%)": 0.0,
+                    "Avg Color (R,G,B)": ref_color,
+                    "Color Diff": 0.0
+                })
+
+                # Add sample rows
                 for sample_name, cropped_img in st.session_state.cropped_samples.items():
                     gray = cv2.cvtColor(np.array(cropped_img), cv2.COLOR_RGB2GRAY)
                     dirt_score = 255 - np.mean(gray)
@@ -142,3 +152,23 @@ if reference_file and uploaded_files:
                     csv_buffer = io.StringIO()
                     df.to_csv(csv_buffer, index=False)
                     st.download_button("Download Results as CSV", csv_buffer.getvalue(), "dirt_analysis.csv", "text/csv")
+
+                # Comparison section
+                st.write("### Compare Two Samples")
+                sample_options = [row["Sample"] for row in results if row["Sample"] != "Reference"]
+                sample_a = st.selectbox("Select Sample A", sample_options)
+                sample_b = st.selectbox("Select Sample B", sample_options)
+
+                if sample_a and sample_b:
+                    col_cmp1, col_cmp2 = st.columns([1, 1])
+                    with col_cmp1:
+                        img_a = st.session_state.cropped_samples[sample_a]
+                        st.image(img_a, caption=f"{sample_a}", width=250)
+                        row_a = next(r for r in results if r["Sample"] == sample_a)
+                        st.write(f"Dirt: {row_a['Dirt Score']} | Norm: {row_a['Normalized (%)']}% | Color Diff: {row_a['Color Diff']}")
+                    with col_cmp2:
+                        img_b = st.session_state.cropped_samples[sample_b]
+                        st.image(img_b, caption=f"{sample_b}", width=250)
+                        row_b = next(r for r in results if r["Sample"] == sample_b)
+                        st.write(f"Dirt: {row_b['Dirt Score']} | Norm: {row_b['Normalized (%)']}% | Color Diff: {row_b['Color Diff']}")
+``
