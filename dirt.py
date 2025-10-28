@@ -86,16 +86,18 @@ if reference_file and uploaded_files:
                     "Color Diff": round(color_diff, 2)
                 })
 
-            # Display results with color swatches
+            # Display results with larger color swatches
             st.write("### Dirt Analysis Results")
             for row in results:
                 color_rgb = row["Avg Color (R,G,B)"]
                 color_hex = '#%02x%02x%02x' % (int(color_rgb[0]), int(color_rgb[1]), int(color_rgb[2]))
                 st.markdown(
                     f"""
-                    <div style="display:flex;align-items:center;margin-bottom:8px;">
-                        <div style="width:20px;height:20px;background-color:{color_hex};border:1px solid #000;margin-right:8px;"></div>
-                        <span><b>{row['Sample']}</b> | Dirt Score: {row['Dirt Score']} | Normalized: {row['Normalized (%)']}% | Color Diff: {row['Color Diff']}</span>
+                    <div style="display:flex;align-items:center;margin-bottom:16px;">
+                        <div style="width:60px;height:60px;background-color:{color_hex};border:2px solid #000;margin-right:16px;"></div>
+                        <span style="font-size:18px;">
+                            <b>{row['Sample']}</b> | Dirt Score: {row['Dirt Score']} | Normalized: {row['Normalized (%)']}% | Color Diff: {row['Color Diff']}
+                        </span>
                     </div>
                     """,
                     unsafe_allow_html=True
