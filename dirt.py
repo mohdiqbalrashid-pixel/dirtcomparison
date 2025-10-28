@@ -6,6 +6,7 @@ from PIL import Image
 import io
 from streamlit_cropper import st_cropper
 
+# Page configuration
 st.set_page_config(page_title="Dirt Analyzer Dashboard", layout="wide")
 st.title("Dirt Comparison Dashboard with Cropping")
 
@@ -23,6 +24,8 @@ if reference_file and uploaded_files:
         sample_names.append(name)
 
     if st.button("Analyze Dirt"):
+        results = []  # Initialize results list
+
         # Crop reference image
         st.write("#### Crop Reference Image")
         ref_image = Image.open(reference_file)
@@ -33,11 +36,11 @@ if reference_file and uploaded_files:
         ref_gray = cv2.cvtColor(np.array(cropped_ref), cv2.COLOR_RGB2GRAY)
         ref_score = 255 - np.mean(ref_gray)
 
-        results = []
         col1, col2 = st.columns([2, 1])
         with col1:
             st.image(ref_image, caption="Original Reference", use_column_width=True)
 
+        # Process each sample
         for idx, uploaded_file in enumerate(uploaded_files):
             st.write(f"#### Crop Region for {sample_names[idx]}")
             image = Image.open(uploaded_file)
@@ -53,9 +56,17 @@ if reference_file and uploaded_files:
                 "Normalized (%)": round(normalized, 2)
             })
 
-# Display results
-df = pd.DataFrame(results)
-with col2:
-    st.write("### Dirt Scores")
-    st.dataframe(df)
-    st.bar_chart(df.set_index("Sample")[["Normalized (%)"]])
+        # Display results only if data exists
+        if results:
+            df = pd.DataFrame(results)
+            with col2:
+                st.write("### Dirt Scores")
+                st.dataframe(df)
+                st.bar_chart(df.set_index("Sample")[["Normalized (%)"]])
+
+            # Download CSV
+            csv_buffer = io.StringIO()
+            df.to_csv(csv_buffer, index=False)
+            st.download_button("Download Results as CSV", csv_buffer.getvalue(), "dirt_scores.csv", "text/csv")
+        else:
+            st.warning("No data to display. Please crop regions for all samples.")
