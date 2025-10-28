@@ -170,5 +170,4 @@ if reference_file and uploaded_files:
                         img_b = st.session_state.cropped_samples[sample_b]
                         st.image(img_b, caption=f"{sample_b}", width=250)
                         row_b = next(r for r in results if r["Sample"] == sample_b)
-                        st.write(f"Dirt: {row_b['Dirt Score']} | Norm: {row_b['Normalized (%)']}% | Color Diff: {row_b['Color Diff']}")
-``
+                        st.write(f"Dirt: {row_b['Dirt Score']} | Norm: {row_b['Normalized (%)']}% | Color Diff: {row_b['Color Diff']}")``
