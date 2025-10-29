@@ -8,7 +8,7 @@ import io
 
 # Page configuration
 st.set_page_config(page_title="Dirt Comparison Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard - Adjustable Heatmap")
+st.title("Dirt Comparison Dashboard - Heatmap Enhanced")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
@@ -31,7 +31,7 @@ if st.sidebar.button("Reset All Crops"):
     st.session_state.cropped_samples = {}
     st.success("All crops have been reset!")
 
-# Heatmap function with CLAHE and blending
+# Heatmap function with inversion fix
 def to_heatmap(image, intensity, cmap_choice):
     img_array = np.array(image)
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
@@ -40,10 +40,13 @@ def to_heatmap(image, intensity, cmap_choice):
     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
     gray_enhanced = clahe.apply(gray)
 
-    # Normalize intensity
-    normalized = cv2.normalize(gray_enhanced, None, 0, 255, cv2.NORM_MINMAX)
+    # Invert grayscale so dirt = high intensity
+    inverted = cv2.bitwise_not(gray_enhanced)
 
-    # Select color map
+    # Normalize intensity
+    normalized = cv2.normalize(inverted, None, 0, 255, cv2.NORM_MINMAX)
+
+    # Apply selected color map
     cmap_dict = {
         "JET": cv2.COLORMAP_JET,
         "HOT": cv2.COLORMAP_HOT,
