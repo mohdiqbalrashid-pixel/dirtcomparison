@@ -8,7 +8,7 @@ import io
 
 # Page configuration
 st.set_page_config(page_title="Dirt Comparison Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard - Analysis with Color/Grayscale Toggle")
+st.title("Dirt Comparison Dashboard - Enhanced Dirt Visibility")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
@@ -33,6 +33,13 @@ def to_grayscale(image):
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
     return Image.fromarray(gray)
 
+# Apply heatmap to highlight dirt
+def to_heatmap(image):
+    img_array = np.array(image)
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    heatmap = cv2.applyColorMap(cv2.convertScaleAbs(gray), cv2.COLORMAP_JET)
+    return Image.fromarray(cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB))
+
 # Color analysis function
 def analyze_color(image):
     img_array = np.array(image)
@@ -41,9 +48,6 @@ def analyze_color(image):
 
 if reference_file and uploaded_files:
     st.sidebar.success("Files uploaded successfully!")
-
-    # Toggle for view mode
-    view_mode = st.sidebar.radio("Select View Mode", ["Color", "Grayscale"])
 
     # Split page into two columns
     col_left, col_right = st.columns([1, 2])
@@ -99,7 +103,6 @@ if reference_file and uploaded_files:
                 ref_color = analyze_color(st.session_state.cropped_reference)
 
                 results = []
-                # Add reference row
                 results.append({
                     "Sample": "Reference",
                     "Dirt Score": round(ref_score, 2),
@@ -108,14 +111,12 @@ if reference_file and uploaded_files:
                     "Color Diff": 0.0
                 })
 
-                # Add sample rows
                 for sample_name, cropped_img in st.session_state.cropped_samples.items():
                     gray = cv2.cvtColor(np.array(cropped_img), cv2.COLOR_RGB2GRAY)
                     dirt_score = 255 - np.mean(gray)
                     normalized = ((dirt_score - ref_score) / ref_score) * 100
-
                     avg_color = analyze_color(cropped_img)
-                    color_diff = sum(abs(np.array(avg_color) - np.array(ref_color)))  # Simple RGB diff
+                    color_diff = sum(abs(np.array(avg_color) - np.array(ref_color)))
 
                     results.append({
                         "Sample": sample_name,
@@ -125,35 +126,20 @@ if reference_file and uploaded_files:
                         "Color Diff": round(color_diff, 2)
                     })
 
-                # Display analysis results
-                st.write("### Analysis Results")
+                # Display analysis with enhanced images
+                st.write("### Analysis Results with Heatmap Enhancement")
                 for row in results:
-                    color_rgb = row["Avg Color (R,G,B)"]
-                    color_hex = '#%02x%02x%02x' % (int(color_rgb[0]), int(color_rgb[1]), int(color_rgb[2]))
-                    st.markdown(
-                        f"""
-                        <div style="display:flex;align-items:center;margin-bottom:16px;">
-                            <div style="width:60px;height:60px;background-color:{color_hex};border:2px solid #000;margin-right:16px;"></div>
-                            <span style="font-size:16px;">
-                                <b>{row['Sample']}</b><br>
-                                Dirt: {row['Dirt Score']} | Norm: {row['Normalized (%)']}%<br>
-                                Color Diff: {row['Color Diff']}
-                            </span>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-
-                # Display cropped images in selected view mode
-                st.write(f"### {view_mode} View of Cropped Regions")
-                images_to_show = [("Reference", st.session_state.cropped_reference)] + list(st.session_state.cropped_samples.items())
-                cols = st.columns(3)
-                for idx, (name, img) in enumerate(images_to_show):
-                    with cols[idx % 3]:
-                        if view_mode == "Grayscale":
-                            st.image(to_grayscale(img), caption=name, width=200)
-                        else:
-                            st.image(img, caption=name, width=200)
+                    st.markdown(f"**{row['Sample']}**")
+                    img = st.session_state.cropped_reference if row['Sample'] == "Reference" else st.session_state.cropped_samples[row['Sample']]
+                    col_img1, col_img2, col_img3 = st.columns([1, 1, 1])
+                    with col_img1:
+                        st.image(img, caption="Original", width=200)
+                    with col_img2:
+                        st.image(to_grayscale(img), caption="Grayscale", width=200)
+                    with col_img3:
+                        st.image(to_heatmap(img), caption="Heatmap", width=200)
+                    st.write(f"Dirt Score: {row['Dirt Score']} | Normalized: {row['Normalized (%)']}% | Color Diff: {row['Color Diff']}")
+                    st.markdown("---")
 
                 # Download CSV
                 df = pd.DataFrame(results)
