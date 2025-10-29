@@ -1,14 +1,12 @@
 import streamlit as st
 import cv2
 import numpy as np
-import pandas as pd
 from PIL import Image
-import io
 from streamlit_cropper import st_cropper
 
 # Page configuration
-st.set_page_config(page_title="Dirt Analyzer Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard with Cropping & Color Analysis")
+st.set_page_config(page_title="Dirt Comparison Dashboard", layout="wide")
+st.title("Dirt Comparison Dashboard - Color/Grayscale Toggle")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
@@ -27,16 +25,19 @@ if st.sidebar.button("Reset All Crops"):
     st.session_state.cropped_samples = {}
     st.success("All crops have been reset!")
 
-# Color analysis function
-def analyze_color(image):
+# Convert image to grayscale
+def to_grayscale(image):
     img_array = np.array(image)
-    avg_color = img_array.mean(axis=(0, 1))  # [R, G, B]
-    return [round(c, 2) for c in avg_color]
+    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    return Image.fromarray(gray)
 
 if reference_file and uploaded_files:
     st.sidebar.success("Files uploaded successfully!")
 
-    # Split page into two main columns
+    # Toggle for view mode
+    view_mode = st.sidebar.radio("Select View Mode", ["Color", "Grayscale"])
+
+    # Split page into two columns
     col_left, col_right = st.columns([1, 2])
 
     # Left column: Cropping workflow
@@ -80,75 +81,15 @@ if reference_file and uploaded_files:
                     st.session_state.cropped_samples[selected_sample] = cropped_img
                     st.success(f"Crop saved for {selected_sample}")
 
-    # Right column: Analysis section
+    # Right column: Display images based on toggle
     with col_right:
         if len(st.session_state.cropped_samples) == len(uploaded_files):
-            if st.button("Analyze Dirt"):
-                # Reference metrics
-                ref_gray = cv2.cvtColor(np.array(st.session_state.cropped_reference), cv2.COLOR_RGB2GRAY)
-                ref_score = 255 - np.mean(ref_gray)
-                ref_color = analyze_color(st.session_state.cropped_reference)
-
-                results = []
-                # Add reference row
-                results.append({
-                    "Sample": "Reference",
-                    "Dirt Score": round(ref_score, 2),
-                    "Normalized (%)": 0.0,
-                    "Avg Color (R,G,B)": ref_color,
-                    "Color Diff": 0.0
-                })
-
-                # Add sample rows
-                for sample_name, cropped_img in st.session_state.cropped_samples.items():
-                    gray = cv2.cvtColor(np.array(cropped_img), cv2.COLOR_RGB2GRAY)
-                    dirt_score = 255 - np.mean(gray)
-                    normalized = ((dirt_score - ref_score) / ref_score) * 100
-
-                    avg_color = analyze_color(cropped_img)
-                    color_diff = sum(abs(np.array(avg_color) - np.array(ref_color)))  # Simple RGB diff
-
-                    results.append({
-                        "Sample": sample_name,
-                        "Dirt Score": round(dirt_score, 2),
-                        "Normalized (%)": round(normalized, 2),
-                        "Avg Color (R,G,B)": avg_color,
-                        "Color Diff": round(color_diff, 2)
-                    })
-
-                # Split right column into two sub-columns
-                col_r1, col_r2 = st.columns([1, 1])
-
-                # Display color swatches and metrics in col_r1
-                with col_r1:
-                    st.write("### Dirt Analysis Results")
-                    for row in results:
-                        color_rgb = row["Avg Color (R,G,B)"]
-                        color_hex = '#%02x%02x%02x' % (int(color_rgb[0]), int(color_rgb[1]), int(color_rgb[2]))
-                        st.markdown(
-                            f"""
-                            <div style="display:flex;align-items:center;margin-bottom:16px;">
-                                <div style="width:60px;height:60px;background-color:{color_hex};border:2px solid #000;margin-right:16px;"></div>
-                                <span style="font-size:16px;">
-                                    <b>{row['Sample']}</b><br>
-                                    Dirt: {row['Dirt Score']} | Norm: {row['Normalized (%)']}%<br>
-                                    Color Diff: {row['Color Diff']}
-                                </span>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-
-                # Display charts and download in col_r2
-                with col_r2:
-                    df = pd.DataFrame(results)
-                    st.write("#### Dirt Score Comparison")
-                    st.bar_chart(df.set_index("Sample")[["Dirt Score"]])
-
-                    st.write("#### Color Difference Comparison")
-                    st.bar_chart(df.set_index("Sample")[["Color Diff"]])
-
-                    # Download CSV
-                    csv_buffer = io.StringIO()
-                    df.to_csv(csv_buffer, index=False)
-                    st.download_button("Download Results as CSV", csv_buffer.getvalue(), "dirt_analysis.csv", "text/csv")
+            st.write(f"### {view_mode} View of Cropped Regions")
+            images_to_show = [("Reference", st.session_state.cropped_reference)] + list(st.session_state.cropped_samples.items())
+            cols = st.columns(3)
+            for idx, (name, img) in enumerate(images_to_show):
+                with cols[idx % 3]:
+                    if view_mode == "Grayscale":
+                        st.image(to_grayscale(img), caption=name, width=200)
+                    else:
+                        st.image(img, caption=name, width=200)
