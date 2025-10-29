@@ -8,7 +8,7 @@ import io
 
 # Page configuration
 st.set_page_config(page_title="Dirt Comparison Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard - Heatmap Enhanced with Zoom")
+st.title("Dirt Comparison Dashboard - Heatmap Enhanced with Legend")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
@@ -58,6 +58,18 @@ def to_heatmap(image, intensity, cmap_choice):
     blended = cv2.addWeighted(cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR), 1 - intensity, heatmap, intensity, 0)
 
     return Image.fromarray(cv2.cvtColor(blended, cv2.COLOR_BGR2RGB))
+
+# Generate heatmap legend
+def generate_legend(cmap_choice):
+    gradient = np.linspace(0, 255, 256).astype(np.uint8)
+    gradient = np.tile(gradient, (50, 1))  # 50px height
+    cmap_dict = {
+        "JET": cv2.COLORMAP_JET,
+        "HOT": cv2.COLORMAP_HOT,
+        "TURBO": cv2.COLORMAP_TURBO
+    }
+    color_bar = cv2.applyColorMap(gradient, cmap_dict[cmap_choice])
+    return Image.fromarray(cv2.cvtColor(color_bar, cv2.COLOR_BGR2RGB))
 
 # Color analysis function
 def analyze_color(image):
@@ -116,6 +128,10 @@ if reference_file and uploaded_files:
     with col_right:
         if len(st.session_state.cropped_samples) == len(uploaded_files):
             if st.button("Analyze Dirt"):
+                # Show heatmap legend
+                st.write("### Heatmap Legend")
+                st.image(generate_legend(cmap_choice), caption="Blue = Clean | Red/Yellow = Dirtier", use_column_width=True)
+
                 # Reference metrics
                 ref_gray = cv2.cvtColor(np.array(st.session_state.cropped_reference), cv2.COLOR_RGB2GRAY)
                 ref_score = 255 - np.mean(ref_gray)
