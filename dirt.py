@@ -8,7 +8,7 @@ import io
 
 # Page configuration
 st.set_page_config(page_title="Dirt Comparison Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard - Heatmap Enhanced")
+st.title("Dirt Comparison Dashboard - Heatmap Enhanced with Zoom")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
@@ -145,16 +145,24 @@ if reference_file and uploaded_files:
                         "Color Diff": round(color_diff, 2)
                     })
 
-                # Display analysis with enhanced heatmap
+                # Display analysis with expandable zoom
                 st.write("### Analysis Results with Adjustable Heatmap")
                 for row in results:
                     st.markdown(f"**{row['Sample']}**")
                     img = st.session_state.cropped_reference if row['Sample'] == "Reference" else st.session_state.cropped_samples[row['Sample']]
+                    
+                    # Side-by-side thumbnails
                     col_img1, col_img2 = st.columns([1, 1])
                     with col_img1:
                         st.image(img, caption="Original", width=200)
                     with col_img2:
-                        st.image(to_heatmap(img, heatmap_intensity, cmap_choice), caption=f"Heatmap ({cmap_choice}, Intensity: {heatmap_intensity})", width=200)
+                        st.image(to_heatmap(img, heatmap_intensity, cmap_choice), caption=f"Heatmap ({cmap_choice})", width=200)
+                    
+                    # Expanders for zoomed view
+                    with st.expander(f"View {row['Sample']} in full size"):
+                        st.image(img, caption="Original Full Size", use_column_width=True)
+                        st.image(to_heatmap(img, heatmap_intensity, cmap_choice), caption=f"Heatmap Full Size ({cmap_choice})", use_column_width=True)
+                    
                     st.write(f"Dirt Score: {row['Dirt Score']} | Normalized: {row['Normalized (%)']}% | Color Diff: {row['Color Diff']}")
                     st.markdown("---")
 
