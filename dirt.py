@@ -8,15 +8,16 @@ import io
 
 # Page configuration
 st.set_page_config(page_title="Dirt Comparison Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard - Heatmap Enhanced")
+st.title("Dirt Comparison Dashboard - Adjustable Heatmap")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
 reference_file = st.sidebar.file_uploader("Upload Clean Reference Image", type=["jpg", "png"])
 uploaded_files = st.sidebar.file_uploader("Upload Sample Images", type=["jpg", "png"], accept_multiple_files=True)
 
-# Heatmap intensity slider
+# Sidebar controls
 heatmap_intensity = st.sidebar.slider("Heatmap Intensity", 0.0, 1.0, 0.6)
+cmap_choice = st.sidebar.selectbox("Heatmap Style", ["JET", "HOT", "TURBO"])
 
 # Initialize session state
 if "cropped_reference" not in st.session_state:
@@ -30,8 +31,8 @@ if st.sidebar.button("Reset All Crops"):
     st.session_state.cropped_samples = {}
     st.success("All crops have been reset!")
 
-# Apply heatmap with adjustable intensity
-def to_heatmap(image, intensity):
+# Heatmap function with CLAHE and blending
+def to_heatmap(image, intensity, cmap_choice):
     img_array = np.array(image)
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
 
@@ -42,8 +43,13 @@ def to_heatmap(image, intensity):
     # Normalize intensity
     normalized = cv2.normalize(gray_enhanced, None, 0, 255, cv2.NORM_MINMAX)
 
-    # Apply color map
-    heatmap = cv2.applyColorMap(normalized, cv2.COLORMAP_TURBO)
+    # Select color map
+    cmap_dict = {
+        "JET": cv2.COLORMAP_JET,
+        "HOT": cv2.COLORMAP_HOT,
+        "TURBO": cv2.COLORMAP_TURBO
+    }
+    heatmap = cv2.applyColorMap(normalized, cmap_dict[cmap_choice])
 
     # Blend with original based on intensity slider
     blended = cv2.addWeighted(cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR), 1 - intensity, heatmap, intensity, 0)
@@ -145,7 +151,7 @@ if reference_file and uploaded_files:
                     with col_img1:
                         st.image(img, caption="Original", width=200)
                     with col_img2:
-                        st.image(to_heatmap(img, heatmap_intensity), caption=f"Heatmap (Intensity: {heatmap_intensity})", width=200)
+                        st.image(to_heatmap(img, heatmap_intensity, cmap_choice), caption=f"Heatmap ({cmap_choice}, Intensity: {heatmap_intensity})", width=200)
                     st.write(f"Dirt Score: {row['Dirt Score']} | Normalized: {row['Normalized (%)']}% | Color Diff: {row['Color Diff']}")
                     st.markdown("---")
 
