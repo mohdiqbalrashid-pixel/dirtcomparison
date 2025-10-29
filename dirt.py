@@ -135,3 +135,28 @@ if reference_file and uploaded_files:
                         <div style="display:flex;align-items:center;margin-bottom:16px;">
                             <div style="width:60px;height:60px;background-color:{color_hex};border:2px solid #000;margin-right:16px;"></div>
                             <span style="font-size:16px;">
+                                <b>{row['Sample']}</b><br>
+                                Dirt: {row['Dirt Score']} | Norm: {row['Normalized (%)']}%<br>
+                                Color Diff: {row['Color Diff']}
+                            </span>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                # Display cropped images in selected view mode
+                st.write(f"### {view_mode} View of Cropped Regions")
+                images_to_show = [("Reference", st.session_state.cropped_reference)] + list(st.session_state.cropped_samples.items())
+                cols = st.columns(3)
+                for idx, (name, img) in enumerate(images_to_show):
+                    with cols[idx % 3]:
+                        if view_mode == "Grayscale":
+                            st.image(to_grayscale(img), caption=name, width=200)
+                        else:
+                            st.image(img, caption=name, width=200)
+
+                # Download CSV
+                df = pd.DataFrame(results)
+                csv_buffer = io.StringIO()
+                df.to_csv(csv_buffer, index=False)
+                st.download_button("Download Analysis as CSV", csv_buffer.getvalue(), "dirt_analysis.csv", "text/csv")
