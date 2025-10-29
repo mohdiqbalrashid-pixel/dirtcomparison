@@ -59,10 +59,10 @@ def to_heatmap(image, intensity, cmap_choice):
 
     return Image.fromarray(cv2.cvtColor(blended, cv2.COLOR_BGR2RGB))
 
-# Generate heatmap legend
+# Generate heatmap legend (smaller size)
 def generate_legend(cmap_choice):
     gradient = np.linspace(0, 255, 256).astype(np.uint8)
-    gradient = np.tile(gradient, (50, 1))  # 50px height
+    gradient = np.tile(gradient, (30, 1))  # Smaller height
     cmap_dict = {
         "JET": cv2.COLORMAP_JET,
         "HOT": cv2.COLORMAP_HOT,
@@ -130,7 +130,7 @@ if reference_file and uploaded_files:
             if st.button("Analyze Dirt"):
                 # Show heatmap legend
                 st.write("### Heatmap Legend")
-                st.image(generate_legend(cmap_choice), caption="Blue = Clean | Red/Yellow = Dirtier", use_column_width=True)
+                st.image(generate_legend(cmap_choice), caption="Low Accumulation → High Accumulation", width=300)
 
                 # Reference metrics
                 ref_gray = cv2.cvtColor(np.array(st.session_state.cropped_reference), cv2.COLOR_RGB2GRAY)
