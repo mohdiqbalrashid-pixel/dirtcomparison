@@ -8,12 +8,15 @@ import io
 
 # Page configuration
 st.set_page_config(page_title="Dirt Comparison Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard - Enhanced Dirt Visibility")
+st.title("Dirt Comparison Dashboard - Heatmap Enhanced")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
 reference_file = st.sidebar.file_uploader("Upload Clean Reference Image", type=["jpg", "png"])
 uploaded_files = st.sidebar.file_uploader("Upload Sample Images", type=["jpg", "png"], accept_multiple_files=True)
+
+# Heatmap intensity slider
+heatmap_intensity = st.sidebar.slider("Heatmap Intensity", 0.0, 1.0, 0.6)
 
 # Initialize session state
 if "cropped_reference" not in st.session_state:
@@ -27,18 +30,25 @@ if st.sidebar.button("Reset All Crops"):
     st.session_state.cropped_samples = {}
     st.success("All crops have been reset!")
 
-# Convert image to grayscale
-def to_grayscale(image):
+# Apply heatmap with adjustable intensity
+def to_heatmap(image, intensity):
     img_array = np.array(image)
     gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-    return Image.fromarray(gray)
 
-# Apply heatmap to highlight dirt
-def to_heatmap(image):
-    img_array = np.array(image)
-    gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-    heatmap = cv2.applyColorMap(cv2.convertScaleAbs(gray), cv2.COLORMAP_JET)
-    return Image.fromarray(cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB))
+    # Enhance contrast using CLAHE
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    gray_enhanced = clahe.apply(gray)
+
+    # Normalize intensity
+    normalized = cv2.normalize(gray_enhanced, None, 0, 255, cv2.NORM_MINMAX)
+
+    # Apply color map
+    heatmap = cv2.applyColorMap(normalized, cv2.COLORMAP_TURBO)
+
+    # Blend with original based on intensity slider
+    blended = cv2.addWeighted(cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR), 1 - intensity, heatmap, intensity, 0)
+
+    return Image.fromarray(cv2.cvtColor(blended, cv2.COLOR_BGR2RGB))
 
 # Color analysis function
 def analyze_color(image):
@@ -126,18 +136,16 @@ if reference_file and uploaded_files:
                         "Color Diff": round(color_diff, 2)
                     })
 
-                # Display analysis with enhanced images
-                st.write("### Analysis Results with Heatmap Enhancement")
+                # Display analysis with enhanced heatmap
+                st.write("### Analysis Results with Adjustable Heatmap")
                 for row in results:
                     st.markdown(f"**{row['Sample']}**")
                     img = st.session_state.cropped_reference if row['Sample'] == "Reference" else st.session_state.cropped_samples[row['Sample']]
-                    col_img1, col_img2, col_img3 = st.columns([1, 1, 1])
+                    col_img1, col_img2 = st.columns([1, 1])
                     with col_img1:
                         st.image(img, caption="Original", width=200)
                     with col_img2:
-                        st.image(to_grayscale(img), caption="Grayscale", width=200)
-                    with col_img3:
-                        st.image(to_heatmap(img), caption="Heatmap", width=200)
+                        st.image(to_heatmap(img, heatmap_intensity), caption=f"Heatmap (Intensity: {heatmap_intensity})", width=200)
                     st.write(f"Dirt Score: {row['Dirt Score']} | Normalized: {row['Normalized (%)']}% | Color Diff: {row['Color Diff']}")
                     st.markdown("---")
 
