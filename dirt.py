@@ -135,4 +135,3 @@ if reference_file and uploaded_files:
                         <div style="display:flex;align-items:center;margin-bottom:16px;">
                             <div style="width:60px;height:60px;background-color:{color_hex};border:2px solid #000;margin-right:16px;"></div>
                             <span style="font-size:16px;">
-                                <
