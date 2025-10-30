@@ -1,3 +1,4 @@
+from streamlit_autorefresh import st_autorefresh
 import streamlit as st
 import cv2
 import numpy as np
@@ -6,9 +7,12 @@ from PIL import Image
 from streamlit_cropper import st_cropper
 import io
 
+# Auto-refresh every 60 seconds to prevent inactivity
+st_autorefresh(interval=60000, limit=None, key="auto_refresh")
+
 # Page configuration
 st.set_page_config(page_title="Dirt Comparison Dashboard", layout="wide")
-st.title("Dirt Comparison Dashboard - Heatmap Enhanced with Legend")
+st.title("Dirt Comparison Dashboard")
 
 # Sidebar uploads
 st.sidebar.header("Upload Images")
@@ -187,3 +191,4 @@ if reference_file and uploaded_files:
                 csv_buffer = io.StringIO()
                 df.to_csv(csv_buffer, index=False)
                 st.download_button("Download Analysis as CSV", csv_buffer.getvalue(), "dirt_analysis.csv", "text/csv")
+``
