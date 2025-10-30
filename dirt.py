@@ -191,4 +191,3 @@ if reference_file and uploaded_files:
                 csv_buffer = io.StringIO()
                 df.to_csv(csv_buffer, index=False)
                 st.download_button("Download Analysis as CSV", csv_buffer.getvalue(), "dirt_analysis.csv", "text/csv")
-``
