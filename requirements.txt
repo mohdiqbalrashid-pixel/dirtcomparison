@@ -5,3 +5,4 @@ pandas
 numpy
 streamlit-cropper
 scikit-image
+streamlit-autorefresh
